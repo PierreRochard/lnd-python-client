@@ -18,7 +18,9 @@ os.environ["GRPC_SSL_CIPHER_SUITES"] = 'HIGH+ECDSA'
 
 
 class LightningClient(object):
-    def __init__(self, rpc_server: str, data_path: str = None):
+    def __init__(self, rpc_server_uri: str, listening_uri: str, name: str = None):
+        self.listening_uri = listening_uri
+
         if platform == "linux" or platform == "linux2":
             path = '~/.lnd/'
         elif platform == "darwin":
@@ -27,10 +29,10 @@ class LightningClient(object):
             raise Exception(f"What's the {platform} path for the lnd tls cert?")
         self.main_lnd_path = os.path.expanduser(path)
 
-        if data_path is None:
+        if name is None:
             self.data_path = self.main_lnd_path
         else:
-            data_path = os.path.expanduser(data_path)
+            data_path = os.path.expanduser(f'~/go/dev/{name}/data')
             if not os.path.exists(data_path):
                 raise Exception(f'Invalid path {data_path}')
             self.data_path = data_path
@@ -54,15 +56,26 @@ class LightningClient(object):
         self.credentials = grpc.composite_channel_credentials(cert_credentials,
                                                               auth_credentials)
 
-        self.grpc_channel = grpc.secure_channel(rpc_server,
+        self.grpc_channel = grpc.secure_channel(rpc_server_uri,
                                                 self.credentials)
         self.lnd_client = lnrpc.LightningStub(self.grpc_channel)
 
     def get_info(self) -> ln.GetInfoResponse:
         return self.lnd_client.GetInfo(ln.GetInfoRequest())
 
+    @property
+    def pubkey(self):
+        return self.get_info().identity_pubkey
+
     def get_balance(self) -> ln.WalletBalanceResponse:
         return self.lnd_client.WalletBalance(ln.WalletBalanceRequest())
 
     def get_new_address(self) -> ln.NewAddressResponse:
         return self.lnd_client.NewAddress(ln.NewAddressRequest())
+
+    def connect(self, pubkey: str, listening_uri: str):
+        address = ln.LightningAddress(pubkey=pubkey, host=listening_uri)
+        return self.lnd_client.ConnectPeer(ln.ConnectPeerRequest(addr=address))
+
+    def get_peers(self):
+        return self.lnd_client.ListPeers(ln.ListPeersRequest())
