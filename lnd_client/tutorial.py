@@ -3,23 +3,41 @@
 
 from lnd_client.lightning_client import LightningClient
 
-alice = LightningClient('localhost:10001', 'localhost:10011', 'alice')
-bob = LightningClient('localhost:10002', 'localhost:10012', 'bob')
-charlie = LightningClient('localhost:10003', 'localhost:10013', 'charlie')
 
-nodes = [alice, bob, charlie]
+class LightningNetwork(object):
+    def __init__(self):
+        alice = LightningClient('localhost:10001', 'localhost:10011', 'alice')
+        bob = LightningClient('localhost:10002', 'localhost:10012', 'bob')
+        charlie = LightningClient('localhost:10003', 'localhost:10013',
+                                  'charlie')
 
-for index, user_client in enumerate(nodes):
-    info = user_client.get_info()
-    print(info)
-    balance = user_client.get_balance()
-    print(balance)
-    address = user_client.get_new_address()
-    print(address)
+        self.nodes = [alice, bob, charlie]
 
-    peers = user_client.get_peers()
-    print(peers)
+    def setup_p2p(self):
+        """
+            Create a very simple straight-line network
+        """
 
-    if index and not peers:
-        peer = nodes[index-1]
-        user_client.connect(peer.pubkey, peer.listening_uri)
+        for index, user_client in enumerate(self.nodes):
+            peers = user_client.get_peers()
+            if index and not peers:
+                peer = self.nodes[index - 1]
+                user_client.connect(peer.pubkey, peer.listening_uri)
+
+    def output_info(self):
+        for index, user_client in enumerate(self.nodes):
+            info = user_client.get_info()
+            print(info)
+            balance = user_client.get_balance()
+            print(balance)
+            address = user_client.get_new_address()
+            print(address)
+
+            peers = user_client.get_peers()
+            print(peers)
+
+
+if __name__ == '__main__':
+    network = LightningNetwork()
+    network.setup_p2p()
+    network.output_info()
