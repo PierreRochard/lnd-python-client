@@ -26,7 +26,8 @@ class LightningNetwork(object):
 
     def setup_channels(self):
         for index, user_client in enumerate(self.nodes):
-            if index + 1 < len(self.nodes):
+            channels = user_client.get_channels().channels
+            if index + 1 < len(self.nodes) and not channels:
                 peer = self.nodes[index + 1]
                 pubkey = peer.pubkey
                 user_client.open_channel(pubkey, 1000000)
