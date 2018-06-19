@@ -19,6 +19,7 @@ os.environ["GRPC_SSL_CIPHER_SUITES"] = 'HIGH+ECDSA'
 
 class LightningClient(object):
     def __init__(self, rpc_server_uri: str, listening_uri: str, name: str = None):
+        self.name = name
         self.listening_uri = listening_uri
 
         if platform == "linux" or platform == "linux2":
@@ -70,12 +71,22 @@ class LightningClient(object):
     def get_balance(self) -> ln.WalletBalanceResponse:
         return self.lnd_client.WalletBalance(ln.WalletBalanceRequest())
 
+    def get_channels(self) -> ln.ListChannelsResponse:
+        return self.lnd_client.ListChannels(ln.ListChannelsRequest())
+
     def get_new_address(self) -> ln.NewAddressResponse:
         return self.lnd_client.NewAddress(ln.NewAddressRequest())
 
+    def get_peers(self) -> ln.ListPeersResponse:
+        return self.lnd_client.ListPeers(ln.ListPeersRequest())
+
     def connect(self, pubkey: str, listening_uri: str):
         address = ln.LightningAddress(pubkey=pubkey, host=listening_uri)
-        return self.lnd_client.ConnectPeer(ln.ConnectPeerRequest(addr=address))
+        request = ln.ConnectPeerRequest(addr=address)
+        return self.lnd_client.ConnectPeer(request)
 
-    def get_peers(self):
-        return self.lnd_client.ListPeers(ln.ListPeersRequest())
+    def open_channel(self, pubkey: str, amount: int):
+        request = ln.OpenChannelRequest(node_pubkey=codecs.decode(pubkey, 'hex'),
+                                        node_pubkey_string=codecs.encode(pubkey.encode('utf-8'), 'hex'),
+                                        local_funding_amount=amount)
+        return self.lnd_client.OpenChannel(request)

@@ -24,20 +24,30 @@ class LightningNetwork(object):
                 peer = self.nodes[index - 1]
                 user_client.connect(peer.pubkey, peer.listening_uri)
 
+    def setup_channels(self):
+        for index, user_client in enumerate(self.nodes):
+            if index + 1 < len(self.nodes):
+                peer = self.nodes[index + 1]
+                pubkey = peer.pubkey
+                user_client.open_channel(pubkey, 1000000)
+
     def output_info(self):
         for index, user_client in enumerate(self.nodes):
+            print(user_client.name)
             info = user_client.get_info()
             print(info)
             balance = user_client.get_balance()
             print(balance)
             address = user_client.get_new_address()
             print(address)
-
             peers = user_client.get_peers()
             print(peers)
+            channels = user_client.get_channels()
+            print(channels)
 
 
 if __name__ == '__main__':
     network = LightningNetwork()
     network.setup_p2p()
+    network.setup_channels()
     network.output_info()
