@@ -89,4 +89,11 @@ class LightningClient(object):
         request = ln.OpenChannelRequest(node_pubkey=codecs.decode(pubkey, 'hex'),
                                         node_pubkey_string=codecs.encode(pubkey.encode('utf-8'), 'hex'),
                                         local_funding_amount=amount)
-        return self.lnd_client.OpenChannel(request)
+        self.lnd_client.OpenChannel(request)
+
+    def create_invoice(self, local_amount: int, push_amount: int):
+        pass
+
+    def send_payment(self, encoded_invoice: str):
+        pass
+
