@@ -38,6 +38,13 @@ class LightningNetwork(object):
                 raise
 
     def setup_channels(self):
+        # Close existing channels
+        for node in self.nodes:
+            channels = node.get_channels().channels
+            for channel in channels:
+                node.close_channel(channel_point=channel.channel_point)
+
+        # Setup new channels
         self.setup_channel(self.bob, self.alice, 1000000, 0)
         self.setup_channel(self.charlie, self.bob, 800000, 200000)
 
@@ -81,6 +88,11 @@ if __name__ == '__main__':
                         type=bool,
                         default=False
                         )
+    parser.add_argument('-s',
+                        dest='send_payments',
+                        type=bool,
+                        default=False
+                        )
     args = parser.parse_args()
 
     network = LightningNetwork()
@@ -88,7 +100,8 @@ if __name__ == '__main__':
     if args.setup_channels:
         network.setup_channels()
 
-    network.send_payment(network.alice, network.bob, 2018)
-    network.send_payment(network.alice, network.charlie, 2019)
+    if args.send_payments:
+        network.send_payment(network.alice, network.bob, 2018)
+        network.send_payment(network.alice, network.charlie, 2019)
 
     network.output_info()

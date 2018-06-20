@@ -102,3 +102,8 @@ class LightningClient(object):
         request_iterable = request_generator(encoded_invoice)
         response = self.lnd_client.SendPayment(request_iterable)
         return response
+
+    def close_channel(self, channel_point: str):
+        request = ln.CloseChannelRequest(channel_point=channel_point)
+        response = self.lnd_client.CloseChannel(request)
+        return response
