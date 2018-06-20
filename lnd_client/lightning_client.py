@@ -85,15 +85,18 @@ class LightningClient(object):
         request = ln.ConnectPeerRequest(addr=address)
         return self.lnd_client.ConnectPeer(request)
 
-    def open_channel(self, pubkey: str, amount: int):
+    def open_channel(self, pubkey: str, local_amount: int, push_amount: int):
         request = ln.OpenChannelRequest(node_pubkey=codecs.decode(pubkey, 'hex'),
                                         node_pubkey_string=codecs.encode(pubkey.encode('utf-8'), 'hex'),
-                                        local_funding_amount=amount)
+                                        local_funding_amount=local_amount,
+                                        push_sat=push_amount)
         self.lnd_client.OpenChannel(request)
 
-    def create_invoice(self, local_amount: int, push_amount: int):
-        pass
+    def create_invoice(self, amount: int) -> ln.AddInvoiceResponse:
+        request = ln.Invoice(value=amount)
+        return self.lnd_client.AddInvoice(request)
 
     def send_payment(self, encoded_invoice: str):
-        pass
-
+        request = ln.Payment(payment_hash=encoded_invoice)
+        response = self.lnd_client.SendPayment(request)
+        return response

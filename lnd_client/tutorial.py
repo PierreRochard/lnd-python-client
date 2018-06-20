@@ -6,31 +6,57 @@ from lnd_client.lightning_client import LightningClient
 
 class LightningNetwork(object):
     def __init__(self):
-        alice = LightningClient('localhost:10001', 'localhost:10011', 'alice')
-        bob = LightningClient('localhost:10002', 'localhost:10012', 'bob')
-        charlie = LightningClient('localhost:10003', 'localhost:10013',
-                                  'charlie')
+        self.alice = LightningClient('localhost:10001',
+                                     'localhost:10011',
+                                     'alice')
 
-        self.nodes = [alice, bob, charlie]
+        self.bob = LightningClient('localhost:10002',
+                                   'localhost:10012',
+                                   'bob')
+
+        self.charlie = LightningClient('localhost:10003',
+                                       'localhost:10013',
+                                       'charlie')
+
+        self.nodes = [self.alice, self.bob, self.charlie]
+        self.setup_p2p()
 
     def setup_p2p(self):
-        """
-            Create a very simple straight-line network
-        """
+        self.setup_p2p_connection(self.alice, self.bob)
+        self.setup_p2p_connection(self.bob, self.charlie)
 
-        for index, user_client in enumerate(self.nodes):
-            peers = user_client.get_peers()
-            if index and not peers:
-                peer = self.nodes[index - 1]
-                user_client.connect(peer.pubkey, peer.listening_uri)
+    @staticmethod
+    def setup_p2p_connection(source_node: LightningClient,
+                             destination_node: LightningClient):
+        try:
+            source_node.connect(destination_node.pubkey,
+                                destination_node.listening_uri)
+        except Exception as exc:
+            if 'already connected to peer' in exc._state.details:
+                pass
+            else:
+                raise
 
     def setup_channels(self):
-        for index, user_client in enumerate(self.nodes):
-            channels = user_client.get_channels().channels
-            if index + 1 < len(self.nodes) and len(channels) < 2:
-                peer = self.nodes[index + 1]
-                pubkey = peer.pubkey
-                user_client.open_channel(pubkey, 1000000)
+        self.setup_channel(self.bob, self.alice, 1000000, 0)
+        self.setup_channel(self.charlie, self.bob, 800000, 200000)
+
+    @staticmethod
+    def setup_channel(source_node: LightningClient,
+                      destination_node: LightningClient,
+                      local_amount: int,
+                      push_amount: int):
+        pubkey = destination_node.pubkey
+        source_node.open_channel(pubkey=pubkey,
+                                 local_amount=local_amount,
+                                 push_amount=push_amount)
+
+    @staticmethod
+    def send_payment(source_node: LightningClient,
+                     destination_node: LightningClient,
+                     amount: int):
+        invoice = destination_node.create_invoice(amount=amount).payment_request
+        source_node.send_payment(encoded_invoice=invoice)
 
     def output_info(self):
         for index, user_client in enumerate(self.nodes):
@@ -48,7 +74,20 @@ class LightningNetwork(object):
 
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='Update pull request')
+    parser.add_argument('-c',
+                        dest='setup_channels',
+                        type=bool,
+                        default=False
+                        )
+    args = parser.parse_args()
+
     network = LightningNetwork()
-    network.setup_p2p()
-    network.setup_channels()
+
+    if args.setup_channels:
+        network.setup_channels()
+
+    network.send_payment(network.alice, network.bob, 1)
+
     network.output_info()
