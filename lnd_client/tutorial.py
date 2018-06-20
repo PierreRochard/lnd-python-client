@@ -88,6 +88,7 @@ if __name__ == '__main__':
     if args.setup_channels:
         network.setup_channels()
 
-    network.send_payment(network.alice, network.bob, 1)
+    network.send_payment(network.alice, network.bob, 2018)
+    network.send_payment(network.alice, network.charlie, 2019)
 
     network.output_info()
