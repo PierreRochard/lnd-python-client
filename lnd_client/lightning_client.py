@@ -97,6 +97,8 @@ class LightningClient(object):
         return self.lnd_client.AddInvoice(request)
 
     def send_payment(self, encoded_invoice: str):
-        request = ln.Payment(payment_hash=encoded_invoice)
-        response = self.lnd_client.SendPayment(request)
+        def request_generator(ei: str):
+            yield ln.SendRequest(payment_request=ei)
+        request_iterable = request_generator(encoded_invoice)
+        response = self.lnd_client.SendPayment(request_iterable)
         return response
