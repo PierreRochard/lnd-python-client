@@ -1,3 +1,4 @@
+flask-admin
 grpcio
 grpcio-tools
 googleapis-common-protos

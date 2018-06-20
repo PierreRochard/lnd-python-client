@@ -1,0 +1,4 @@
+
+
+class MyDbModel(BaseModelView):
+    pass
